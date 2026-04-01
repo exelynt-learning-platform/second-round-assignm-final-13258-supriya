@@ -90,6 +90,7 @@ public class OrderServiceImpl implements OrderService {
 
                     // Create OrderItem
                     OrderItem orderItem = new OrderItem();
+                    orderItem.setOrder(order);
                     orderItem.setProduct(product);
                     orderItem.setQuantity(cartItem.getQuantity());
                     orderItem.setPrice(product.getPrice()); // snapshot
