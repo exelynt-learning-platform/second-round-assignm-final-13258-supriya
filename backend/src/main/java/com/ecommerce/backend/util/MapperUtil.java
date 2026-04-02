@@ -1,5 +1,6 @@
 package com.ecommerce.backend.util;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,8 @@ public class MapperUtil {
     //CART
 
         public static CartResponse toCartResponse(Cart cart) {
-        List<CartResponse.CartItemResponse> items = cart.getCartItems()
+        List<CartItem> cartItems = cart.getCartItems() != null ? cart.getCartItems() : Collections.emptyList();
+        List<CartResponse.CartItemResponse> items = cartItems
                 .stream()
                 .map((CartItem item)  -> CartResponse.CartItemResponse.builder()
                         .productId(item.getProduct().getId())

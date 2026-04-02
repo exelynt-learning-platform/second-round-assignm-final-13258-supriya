@@ -61,7 +61,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException(Constant.CART_NOT_FOUND));
 
         // Edge: Empty cart
-        if (cart.getCartItems().isEmpty()) {
+        if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
             throw new BadRequestException(Constant.CART_EMPTY);
         }
 

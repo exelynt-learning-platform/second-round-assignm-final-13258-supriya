@@ -18,46 +18,41 @@ import com.ecommerce.backend.dto.response.ProductResponse;
 import com.ecommerce.backend.service.ProductService;
 
 import jakarta.validation.Valid;
-//import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/products")
-//@RequiredArgsConstructor
-
+@RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
-    public ProductController(ProductService productService) {
-        this.productService = productService;
-    }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')") // Only admin can create products
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
         return ResponseEntity.status(201).body(productService.createProduct(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')") // Only admin can update products
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
     @GetMapping
-        public ResponseEntity<List<ProductResponse>> getAll() {
+    public ResponseEntity<List<ProductResponse>> getAll() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')") // Only admin can delete products
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> delete(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok("Product deleted successfully");
     }
-    
 }
