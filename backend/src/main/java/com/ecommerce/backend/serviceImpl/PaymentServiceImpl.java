@@ -23,8 +23,14 @@ import com.stripe.param.checkout.SessionCreateParams;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
-    @Value("${stripe.secretKey}")
+    @Value("${stripe.secretKey:}")
     private String secretKey;
+
+    @Value("${payment.stripe.success-url:https://example.com/api/payments/success?session_id={CHECKOUT_SESSION_ID}}")
+    private String successUrl;
+
+    @Value("${payment.stripe.cancel-url:https://example.com/api/payments/cancel}")
+    private String cancelUrl;
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
@@ -48,6 +54,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         User user = getCurrentUser();
 
+        if (request.getPaymentMethod() == null || !"STRIPE".equalsIgnoreCase(request.getPaymentMethod())) {
+            throw new BadRequestException(Constant.PAYMENT_METHOD_NOT_SUPPORTED);
+        }
+
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException(Constant.ORDER_NOT_FOUND));
 
@@ -61,13 +71,17 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BadRequestException(Constant.ORDER_ALREADY_PAID);
         }
 
+        if (secretKey == null || secretKey.isBlank()) {
+            return buildFailedResponse(order.getId(), Constant.STRIPE_KEY_NOT_CONFIGURED);
+        }
+
         try {
             Stripe.apiKey = secretKey;
 
             SessionCreateParams params = SessionCreateParams.builder()
                     .setMode(SessionCreateParams.Mode.PAYMENT)
-                    .setSuccessUrl("http://localhost:8080/api/payments/success?session_id={CHECKOUT_SESSION_ID}")
-                    .setCancelUrl("http://localhost:8080/api/payments/cancel")
+                    .setSuccessUrl(successUrl)
+                    .setCancelUrl(cancelUrl)
                     .addLineItem(
                             SessionCreateParams.LineItem.builder()
                                     .setQuantity(1L)
@@ -101,23 +115,23 @@ public class PaymentServiceImpl implements PaymentService {
                     .sessionUrl(session.getUrl())
                     .build();
         } catch (Exception e) {
-
-            return PaymentResponse.builder()
-                    .status("FAILED")
-                    .message("Failed to create Stripe session: " + e.getMessage())
-                    .orderId(order.getId())
-                    .paymentMethod("STRIPE")
-                    .paymentStatus("FAILED")
-                    .build();
+            order.setStatus(OrderStatus.FAILED);
+            orderRepository.save(order);
+            return buildFailedResponse(order.getId(), "Failed to create Stripe session: " + e.getMessage());
         }
     }
 
     // Handle Success redirect
     @Override
     public PaymentResponse handlePaymentSuccess(String sessionId) {
+        User user = getCurrentUser();
 
         Order order = orderRepository.findByStripeSessionId(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException(Constant.ORDER_NOT_FOUND));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedException(Constant.ORDER_ACCESS_DENIED);
+        }
 
         // Update order status to PAID
         order.setStatus(OrderStatus.PAID);
@@ -129,6 +143,16 @@ public class PaymentServiceImpl implements PaymentService {
                 .orderId(order.getId())
                 .paymentMethod("STRIPE")
                 .paymentStatus("PAID")
+                .build();
+    }
+
+    private PaymentResponse buildFailedResponse(Long orderId, String message) {
+        return PaymentResponse.builder()
+                .status("FAILED")
+                .message(message)
+                .orderId(orderId)
+                .paymentMethod("STRIPE")
+                .paymentStatus("FAILED")
                 .build();
     }
 }

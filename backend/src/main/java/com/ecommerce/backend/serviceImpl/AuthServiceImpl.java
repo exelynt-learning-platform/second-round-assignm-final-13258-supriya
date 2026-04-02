@@ -33,14 +33,15 @@ public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEn
 
 public AuthResponse register(RegisterRequest request) {
     // Edge Case: Email already exists
+    String normalizedEmail = request.getEmail().toLowerCase();
 
-    if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+    if (userRepository.findByEmail(normalizedEmail).isPresent()) {
         throw new BadRequestException(Constant.USER_ALREADY_EXISTS);
     }
 
     User user = new User();
     user.setName(request.getName());
-    user.setEmail(request.getEmail().toLowerCase());
+    user.setEmail(normalizedEmail);
     user.setPassword(passwordEncoder.encode(request.getPassword()));
     user.setAddress(request.getAddress());
 

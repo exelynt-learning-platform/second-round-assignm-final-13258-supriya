@@ -26,27 +26,24 @@ public class CartController {
     private final CartService cartService;
     
     @PostMapping
-    //@PostMapping("/add")
     public ResponseEntity<CartResponse> addToCart (@Valid @RequestBody CartItemRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(cartService.addToCart(email,request));
     }
 
-     @GetMapping
-    //@GetMapping("/{userId}")
+    @GetMapping
     public ResponseEntity<CartResponse> getCart() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(cartService.getCart(email));
     }
 
     @PutMapping
-public ResponseEntity<CartResponse> updateCart(@Valid @RequestBody CartItemRequest request) {
-    String email = SecurityContextHolder.getContext().getAuthentication().getName();
-    return ResponseEntity.ok(cartService.updateCartItem(email, request));
-}
-     
+    public ResponseEntity<CartResponse> updateCart(@Valid @RequestBody CartItemRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(cartService.updateCartItem(email, request));
+    }
+	     
     @DeleteMapping("/{productId}")
-    //@DeleteMapping("/{userId}/remove/{productId}")
     public ResponseEntity<String> removeFromCart (@PathVariable Long productId) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         cartService.removeFromCart(email, productId);
@@ -54,7 +51,6 @@ public ResponseEntity<CartResponse> updateCart(@Valid @RequestBody CartItemReque
     }
     
     @DeleteMapping("/clear")
-    //@DeleteMapping("/{userId}/clear")
     public ResponseEntity<String> clearCart() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         cartService.clearCart(email);

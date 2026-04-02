@@ -34,6 +34,7 @@ import com.ecommerce.backend.exception.BadRequestException;
 import com.ecommerce.backend.exception.ResourceNotFoundException;
 import com.ecommerce.backend.exception.UnauthorizedException;
 import com.ecommerce.backend.repository.CartRepository;
+import com.ecommerce.backend.repository.CartItemRepository;
 import com.ecommerce.backend.repository.OrderRepository;
 import com.ecommerce.backend.repository.ProductRepository;
 import com.ecommerce.backend.repository.UserRepository;
@@ -44,6 +45,7 @@ public class OrderServiceTest {
 
     @Mock private OrderRepository orderRepository;
     @Mock private CartRepository cartRepository;
+    @Mock private CartItemRepository cartItemRepository;
     @Mock private ProductRepository productRepository;
     @Mock private UserRepository userRepository;
 
@@ -81,7 +83,7 @@ public class OrderServiceTest {
 
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
         when(cartRepository.findByUser(mockUser)).thenReturn(Optional.of(cart));
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
 
         OrderResponse response = orderService.createOrder(new OrderRequest("Pune"));
@@ -89,6 +91,7 @@ public class OrderServiceTest {
         assertNotNull(response);
         assertEquals(200.0, response.getTotalPrice());
         assertEquals(8, product.getStock()); // stock deducted
+        verify(cartItemRepository).deleteAllByCart(cart);
         verify(orderRepository).save(any(Order.class));
     }
 
@@ -112,7 +115,7 @@ public class OrderServiceTest {
 
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
         when(cartRepository.findByUser(mockUser)).thenReturn(Optional.of(cart));
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
 
         assertThrows(BadRequestException.class,
                 () -> orderService.createOrder(new OrderRequest("Pune")));

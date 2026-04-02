@@ -1,7 +1,5 @@
 package com.ecommerce.backend.dto.response;
 
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,9 +11,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CartResponse {
-
-    private Long cartId;
-    private List<CartItemResponse> items;
-    private double totalPrice;
+public class CartItemResponse {
+    private Long productId;
+    private String productName;
+    private Integer quantity;
+    private Double price;
 }

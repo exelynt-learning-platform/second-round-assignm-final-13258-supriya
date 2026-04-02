@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -164,12 +165,17 @@ public class CartServiceTest {
     void clearCart_success() {
         User user = mockUser();
         Cart cart = mockCart(user);
+        Product product = mockProduct(10);
+        cart.setCartItems(new ArrayList<>(List.of(
+                CartItem.builder().id(1L).cart(cart).product(product).quantity(1).build()
+        )));
 
         when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
         when(cartRepository.findByUser(user)).thenReturn(Optional.of(cart));
 
         cartService.clearCart("test@test.com");
 
+        verify(cartItemRepository).deleteAllByCart(cart);
         verify(cartRepository).save(cart);
     }
 

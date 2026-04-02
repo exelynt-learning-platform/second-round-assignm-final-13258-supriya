@@ -2,6 +2,10 @@ package com.ecommerce.backend.util;
 
 public class Constant {
 
+    private Constant() {
+        throw new IllegalStateException("Utility class");
+    }
+
     // USER
     public static final String USER_NOT_FOUND = "User not found";
     public static final String USER_ALREADY_EXISTS = "User already exists with this email";
@@ -25,4 +29,8 @@ public class Constant {
     public static final String ORDER_CANNOT_BE_UPDATED = "Order cannot be updated";
     public static final String ORDER_ACCESS_DENIED = "You are not authorized to access this order";
     public static final String ORDER_STOCK_CHANGED = "Stock changed, please update your cart";
+
+    // PAYMENT
+    public static final String PAYMENT_METHOD_NOT_SUPPORTED = "Only STRIPE payment method is supported";
+    public static final String STRIPE_KEY_NOT_CONFIGURED = "Stripe secret key is not configured";
 }

@@ -39,6 +39,9 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponse addToCart(String email, CartItemRequest request) {
+        if (request.getQuantity() <= 0) {
+            throw new BadRequestException(Constant.CART_ITEM_EMPTY);
+        }
 
         Product product = getProduct(request.getProductId());
 
@@ -92,6 +95,7 @@ public class CartServiceImpl implements CartService {
 
         if (request.getQuantity() == 0) {
             cartItemRepository.delete(cartItem);
+            cart.getCartItems().remove(cartItem);
         } else {
             if (request.getQuantity() > product.getStock()) {
                 throw new BadRequestException(Constant.QUANTITY_EXCEEDS_STOCK);
@@ -115,6 +119,7 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException(Constant.CART_ITEM_NOT_FOUND));
 
         cartItemRepository.delete(cartItem);
+        cart.getCartItems().remove(cartItem);
     }
 
     @Override
@@ -122,7 +127,8 @@ public class CartServiceImpl implements CartService {
 
         Cart cart = getOrCreateCart(email);
 
-        if (cart.getCartItems() != null) {
+        if (cart.getCartItems() != null && !cart.getCartItems().isEmpty()) {
+            cartItemRepository.deleteAllByCart(cart);
             cart.getCartItems().clear();
         }
         cartRepository.save(cart);

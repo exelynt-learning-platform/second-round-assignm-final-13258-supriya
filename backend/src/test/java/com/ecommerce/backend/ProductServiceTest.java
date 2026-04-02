@@ -119,6 +119,7 @@ public class ProductServiceTest {
         assertNotNull(response);
         assertEquals("Updated Product", product.getName());
         assertEquals(149.99, product.getPrice());
+        assertEquals("http://image.com/updated.jpg", product.getImageUrl());
         verify(productRepository).save(product);
     }
 

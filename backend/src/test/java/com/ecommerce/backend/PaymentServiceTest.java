@@ -58,6 +58,15 @@ public class PaymentServiceTest {
     }
 
     @Test
+    void processPayment_unsupportedMethod_throwsBadRequest() {
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
+
+        PaymentRequest request = PaymentRequest.builder().orderId(1L).paymentMethod("PAYPAL").build();
+
+        assertThrows(BadRequestException.class, () -> paymentService.processPayment(request));
+    }
+
+    @Test
     void processPayment_orderNotFound_throwsException() {
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
         when(orderRepository.findById(any())).thenReturn(Optional.empty());
@@ -114,6 +123,7 @@ public class PaymentServiceTest {
         Order order = Order.builder().id(1L).user(mockUser).status(OrderStatus.PENDING)
                 .stripeSessionId("session_123").totalAmount(100.0).build();
 
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
         when(orderRepository.findByStripeSessionId("session_123")).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
@@ -127,7 +137,20 @@ public class PaymentServiceTest {
     }
 
     @Test
+    void handlePaymentSuccess_unauthorizedUser_throwsException() {
+        User otherUser = User.builder().id(2L).email("other@test.com").build();
+        Order order = Order.builder().id(1L).user(otherUser).status(OrderStatus.PENDING)
+                .stripeSessionId("session_123").totalAmount(100.0).build();
+
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
+        when(orderRepository.findByStripeSessionId("session_123")).thenReturn(Optional.of(order));
+
+        assertThrows(UnauthorizedException.class, () -> paymentService.handlePaymentSuccess("session_123"));
+    }
+
+    @Test
     void handlePaymentSuccess_sessionNotFound_throwsException() {
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
         when(orderRepository.findByStripeSessionId(any())).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,

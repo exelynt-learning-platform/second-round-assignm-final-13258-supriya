@@ -1,6 +1,8 @@
 package com.ecommerce.backend.security;
 
 import java.security.Key;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -9,17 +11,37 @@ import io.jsonwebtoken.security.Keys;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import java.util.Date;
+
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class JwtUtil {
 
+    private static final int MIN_SECRET_LENGTH = 32;
+
     @Value("${jwt.secret}")
-    private String SECRET ;
-    private final long EXPIRATION_TIME = 1000 * 60 * 60 ; // 1 hour
+    private String secret;
+
+    @Value("${jwt.expiration-ms:3600000}")
+    private long expirationTimeMs;
+
+    private Key signingKey;
+
+    @PostConstruct
+    public void init() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT secret is not configured");
+        }
+
+        if (secret.length() < MIN_SECRET_LENGTH) {
+            throw new IllegalStateException("JWT secret must be at least 32 characters");
+        }
+
+        signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
     
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes());
+        return signingKey;
     }
 
     // Generate JWT token
@@ -28,7 +50,7 @@ public class JwtUtil {
                 .claim("role", role)
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTimeMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

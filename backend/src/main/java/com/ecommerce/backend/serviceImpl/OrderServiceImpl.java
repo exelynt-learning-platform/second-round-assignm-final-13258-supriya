@@ -1,5 +1,6 @@
 package com.ecommerce.backend.serviceImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,16 +26,19 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
 
     public OrderServiceImpl(OrderRepository orderRepository,
                             CartRepository cartRepository,
+                            CartItemRepository cartItemRepository,
                             ProductRepository productRepository,
                             UserRepository userRepository) {
 
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
     }
@@ -70,34 +74,26 @@ public class OrderServiceImpl implements OrderService {
         order.setShippingAddress(orderRequest.getShippingAddress());
         order.setStatus(OrderStatus.CREATED);
 
-        List<OrderItem> orderItems = cart.getCartItems()
-                .stream()
-                .map(cartItem -> {
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (CartItem cartItem : cart.getCartItems()) {
+            Product product = productRepository.findByIdForUpdate(cartItem.getProduct().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(Constant.PRODUCT_NOT_FOUND));
 
-                    Product product = productRepository.findById(cartItem.getProduct().getId())
-                            .orElseThrow(() -> new ResourceNotFoundException(Constant.PRODUCT_NOT_FOUND));
+            int remainingStock = product.getStock() - cartItem.getQuantity();
+            if (remainingStock < 0) {
+                throw new BadRequestException(Constant.ORDER_STOCK_CHANGED);
+            }
 
-                    // Edge: Stock changed
-                    if (cartItem.getQuantity() > product.getStock()) {
-                        throw new BadRequestException(Constant.ORDER_STOCK_CHANGED);
-                    }
+            product.setStock(remainingStock);
+            productRepository.save(product);
 
-                    // Deduct stock
-                    product.setStock(
-                            product.getStock() - cartItem.getQuantity()
-                    );
-                    productRepository.save(product);
-
-                    // Create OrderItem
-                    OrderItem orderItem = new OrderItem();
-                    orderItem.setOrder(order);
-                    orderItem.setProduct(product);
-                    orderItem.setQuantity(cartItem.getQuantity());
-                    orderItem.setPrice(product.getPrice()); // snapshot
-
-                    return orderItem;
-                })
-                .collect(Collectors.toList());
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setPrice(product.getPrice()); // snapshot
+            orderItems.add(orderItem);
+        }
 
         // Calculate total
         double totalAmount = orderItems.stream()
@@ -110,6 +106,7 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         // Clear cart
+        cartItemRepository.deleteAllByCart(cart);
         cart.getCartItems().clear();
         cartRepository.save(cart);
 

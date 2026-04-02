@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,17 +27,18 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
-@Column(nullable = false)
-private String description;
+    @Column(nullable = false)
+    private String description;
 
-@Column(nullable = false)
-private Double price;
+    @Column(nullable = false)
+    private Double price;
 
-@Column(nullable = false)
-private Integer stock;
+    @Column(nullable = false)
+    private Integer stock;
 
-@Column(nullable = false)
-private String imageUrl;
-    
-    
+    @Column(nullable = false)
+    private String imageUrl;
+
+    @Version
+    private Long version;
 }

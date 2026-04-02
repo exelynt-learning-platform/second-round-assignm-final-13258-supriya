@@ -84,6 +84,22 @@ public class AuthServiceTest {
     }
 
     @Test
+    void register_duplicateEmail_caseInsensitive_throwsBadRequest() {
+        RegisterRequest request = RegisterRequest.builder()
+                .name("Test")
+                .email("Test@Test.com")
+                .password("123456")
+                .address("Pune")
+                .build();
+
+        when(userRepository.findByEmail("test@test.com"))
+                .thenReturn(Optional.of(new User()));
+
+        assertThrows(BadRequestException.class, () -> authService.register(request));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     void login_success() {
         User user = User.builder()
                 .name("Test")
